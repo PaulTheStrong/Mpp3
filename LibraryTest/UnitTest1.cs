@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using Library;
 
 namespace LibraryTest
 {
-     public class Tests
+    public class Tests
     {
         private AssemblyLoader _assemblyLoader;
 
@@ -16,74 +17,62 @@ namespace LibraryTest
         public void Init()
         {
             _assemblyLoader = new AssemblyLoader();
-            _lib = Assembly.Load("AssEmbly");
-            _namespaces = _assemblyLoader.GetAssemblyInfo(_lib.Location);
+            _namespaces = _assemblyLoader.GetAssemblyInfo("E:/Univer/5sem/spp/Assembly Browser/Assembly Browser/AssEmbly/bin/Debug/net5.0/AssEmbly.dll");
         }
 
 
         [Test]
-        public void MembersCountTest()
+        public void TestNamespacesCount()
         {
-            var expectedCount = _lib.GetTypes().Length;
-            Assert.AreEqual(_namespaces[0].Members.Count, expectedCount);
+            var expectedCount = 1;
+            Assert.AreEqual(expectedCount, _namespaces.Count);
         }
 
         [Test]
-        public void NamespacesNameTest()
+        public void TestIsNamespacePresentAndContainsAllClasses()
         {
-            foreach (var _namespace in _namespaces)
-            {
-                if (_namespace.Signature != "TestableLib" &&
-                    _namespace.Signature != "System")
-                {
-                    Assert.Fail($"Error in namespace name {_namespace.Signature}");
-                }
-            }
+            Namespace nameSpace = _namespaces.Find(ns => ns.Name == "AssEmbly");
+            Assert.NotNull(nameSpace);
+            int actual = nameSpace.NamespaceClasses.Count;
+            int expected = 3;
+            Assert.AreEqual(expected, actual);
         }
 
         [Test]
-        public void ExtensionMethodName()
+        public void TestClassSignature()
         {
-            var types = _namespaces[0].Members;
-            foreach (var type in types)
-            {
-                if (type.Signature == "ExtClass")
-                {
-                    bool flag = false;
-                    foreach (var member in ((DataContainer)type).Members)
-                    {
-                        if (member.Signature == "CharCount")
-                        {
-                            flag = true;
-                        }
-                    }
-
-                    Assert.IsTrue(flag);
-                }
-            }
+            Namespace nameSpace = _namespaces.Find(ns => ns.Name == "AssEmbly");
+            Assert.NotNull(nameSpace);
+            ClassInfo classInfo = nameSpace.NamespaceClasses[0];
+            Assert.NotNull(classInfo);
+            string actual = classInfo.ClassSignature.Trim();
+            actual = Regex.Replace(actual, @"\s+", " ");
+            string expected = "public class SomeClass";
+            Assert.AreEqual(expected, actual);
         }
 
         [Test]
-        public void ClassesNamesTest()
+        public void TestClassMemebersCount()
         {
-            var types = _namespaces[0].Members;
-            foreach (var type in types)
-            {
-                if (type.Signature != "public static class  ExtClass" && type.Signature != "public  class  TestClass1" && type.Signature != "private   class  TestClass2" && type.Signature != "public abstract class  TestClass3")
-                {
-                    Assert.Fail($"Error in type name {type.Signature}");
-                }
-
-            }
+            Namespace nameSpace = _namespaces.Find(ns => ns.Name == "AssEmbly");
+            Assert.NotNull(nameSpace);
+            ClassInfo classInfo = nameSpace.NamespaceClasses[0];
+            Assert.NotNull(classInfo);
+            Assert.AreEqual(10, classInfo.Members.Count);
         }
 
         [Test]
-        public void FieldNameTest()
+        public void TestClassMemeberSignature()
         {
-            var type = _namespaces[0].Members[1];
-            if (type.Signature == "TestClass1")
-            {
-                Assert.AreEqual(((DataContainer)type).Members[0], "private int foo");
-            }
+            Namespace nameSpace = _namespaces.Find(ns => ns.Name == "AssEmbly");
+            Assert.NotNull(nameSpace);
+            ClassInfo classInfo = nameSpace.NamespaceClasses[0];
+            Assert.NotNull(classInfo);
+            string expected = "public SomeClass (System.Int32 a,System.Int32 b)";
+            MemberInformation actual = classInfo.Members.Find(mi =>
+                Regex.Replace(mi.MemberSignature.Trim(), @"\s+", " ")
+                    .Equals(expected));
+            Assert.NotNull(actual);
         }
+    }
 }
